@@ -1,20 +1,29 @@
-const express = require('express');
-const pool = require('./database.js');
+const app = require('./app');
+const pool = require('./src/config/database')
 
-const app = express();
+require('dotenv').config();
 
-pool.connect();
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
+const port = process.env.PORT || 5000;
+
+//mulai server
+const server = app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
 
+// 🧩 Clean shutdown handler
+async function shutdown() {
+  console.log('Shutting down server...');
 
-app.get('/users', (req, res) => {
-    pool.query('select * from public.users', (err, result)=>{
-        if(!err){
-          res.send(result.rows);
-        }
-        pool.end;
-    })
-});
+  // Tutup Express server
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
 
+  // Tutup pool database
+  await pool.end();
+  console.log('Database pool closed');
+
+  process.exit(0);
+}
+
+process.on('SIGINT', shutdown);
