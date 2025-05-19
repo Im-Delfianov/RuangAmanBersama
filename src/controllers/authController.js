@@ -1,16 +1,13 @@
 const express = require('express');
 const app = express();
-
 const bcrypt = require('bcrypt');
 const bodyParser = require('body-parser');
 const userModel = require('../config/userModels')
 const jwt = require('jsonwebtoken')
+const { sendEmail } = require('../utils/sendEmailer');
 
 app.use(express.json());
 app.use(bodyParser.json());
-
-
-
 
 
 
@@ -43,7 +40,7 @@ function generateRefreshToken(user) {
 
 
 exports.registerUser = async (req, res) => {
-  const {email, password, username, full_name, avatar_url} = req.body;
+  const {email, password, username, full_name} = req.body;
  
   try {
 
@@ -57,16 +54,36 @@ exports.registerUser = async (req, res) => {
        // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      
+
       const newUser = await userModel.createUser({
         email,
         password_hash: hashedPassword,
         username,
-        full_name,
-        avatar_url
-      }
-      )
+        full_name
+      })
 
-      res.status(201).json({ message: 'Registrasi berhasil', newUser });
+      const verificationToken = jwt.sign(
+        { user_id: newUser.user_id },  // pastikan newUser mengembalikan user_id
+        process.env.EMAIL_VERIFICATION_SECRET,
+        { expiresIn: '1d' } // token berlaku 1 hari
+      );
+
+
+      const verifyLink = `${process.env.BASE_URL}/auth/verify-email?token=${verificationToken}`;
+
+      await sendEmail({
+        to: email,
+        subject: 'Verifikasi Email',
+        html: `
+          <h3>Halo ${full_name},</h3>
+          <p>Terima kasih telah mendaftar. Silakan klik link di bawah ini untuk verifikasi email kamu:</p>
+          <a href="${verifyLink}" style="padding:10px 20px;background:#4CAF50;color:white;text-decoration:none;">Verifikasi Email</a>
+          <p>Jika kamu tidak mendaftar, abaikan email ini.</p>
+        `
+      });
+
+      res.status(201).json({ message: 'Registrasi berhasil, Silakan cek email untuk verifikasi.' });
   }
   catch (error){
       console.error(error);
@@ -101,28 +118,23 @@ exports.loginUser = async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
 
-      res.json({
+      res.status(200).json({
+        message: 'Login berhasil',
         accessToken,
         user: {
           id: user.user_id,
           email: user.email,
+          username: user.username,
+          full_name: user.full_name,
           role: user.role
         }
       });
 
       
-      res.status(200).json({
-        message: 'Login berhasil',
-        user: {
-          id: user.user_id,
-          email: user.email,
-          username: user.username,
-          role: user.role
-        }
-      });
+  
     }catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Terjadi kesalahan saat login' });
+      return res.status(500).json({ error: 'Terjadi kesalahan saat login' });
     }
 };
 
@@ -149,6 +161,64 @@ exports.logout = (req, res) => {
 };
 
 
+exports.verifyEmail = async (req, res) => {
+  const token  = req.query.token;
+
+ if (!token) return res.status(400).send('Token tidak ditemukan');
+
+  try {
+    const decoded = jwt.verify(token, process.env.EMAIL_VERIFICATION_SECRET);
+    const { user_id } = decoded;
+
+  
+    await userModel.verifyUser(user_id);
+
+    // Redirect ke halaman login frontend
+    return res.redirect(`${process.env.FRONTEND_URL}/login`);
+  } catch (err) {
+    return res.status(400).send('Token tidak valid atau kadaluarsa');
+  }
+};
+
+exports.resendVerificationEmail = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await userModel.findUserbyEmail(email);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Email tidak ditemukan' });
+    }
+
+    if (user.is_verified) {
+      return res.status(400).json({ error: 'Email sudah diverifikasi' });
+    }
+
+    const token = jwt.sign(
+      { user_id: user.user_id },
+      process.env.EMAIL_VERIFICATION_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const verifyLink = `${process.env.BASE_URL}/auth/verify-email?token=${token}`;
+
+    await sendEmail({
+      to: email,
+      subject: 'Verifikasi Ulang Email',
+      html: `
+        <h3>Halo ${user.full_name},</h3>
+        <p>Berikut adalah tautan untuk verifikasi ulang email kamu:</p>
+        <a href="${verifyLink}" style="padding:10px 20px;background:#4CAF50;color:white;text-decoration:none;">Verifikasi Email</a>
+        <p>Jika kamu tidak mendaftar, abaikan email ini.</p>
+      `
+    });
+
+    res.status(200).json({ message: 'Email verifikasi telah dikirim ulang.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Gagal mengirim ulang email verifikasi' });
+  }
+};
 
 
 

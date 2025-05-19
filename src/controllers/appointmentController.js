@@ -1,4 +1,5 @@
 const appointmentModel = require('../config/appointmentModel');
+const { sendEmail } = require('../utils/sendEmailer');
 
 exports.createAppointment = async (req, res) => {
   try {
@@ -9,8 +10,26 @@ exports.createAppointment = async (req, res) => {
       return res.status(400).json({ message: 'Dokter dan waktu janji harus diisi' });
     }
 
+    const doctor = await doctorModel.getDoctorById(doctor_id);
+    if (!doctor) {
+      return res.status(404).json({ message: 'Dokter tidak ditemukan' });
+    }
+
     const newAppointment = await appointmentModel.createAppointment({ user_id, doctor_id, scheduled_time, notes });
     res.status(201).json(newAppointment);
+
+    
+    await sendEmail({
+      to: req.user.email,
+      subject: 'Konfirmasi Janji Temu',
+      html: `
+        <h3>Halo ${req.user.full_name},</h3>
+        <p>Janji temu kamu dengan Bapak/Ibu ${doctor.full_name} berhasil dibuat.</p>
+        <p><strong>Waktu:</strong> ${new Date(scheduled_time).toLocaleString()}</p>
+        <p>Kami akan konfirmasi sesegera mungkin.</p>
+        <br><p>Terima kasih 🙏</p>`
+    });
+
   } catch (err) {
     res.status(500).json({ message: 'Gagal membuat janji temu', error: err.message });
   }
@@ -50,6 +69,17 @@ exports.updateAppointmentStatus = async (req, res) => {
     if (!updated) return res.status(404).json({ message: 'Janji temu tidak ditemukan' });
 
     res.json(updated);
+
+    await sendEmail({
+      to: appointment.user_email,
+      subject: 'Update Status Janji Temu',
+      html: `
+        <h3>Status Janji Temu Diubah</h3>
+        <p>Waktu: ${new Date(appointment.scheduled_time).toLocaleString()}</p>
+        <p>Status terbaru: <strong>${status}</strong></p>
+        <br><p>Terima kasih telah menggunakan Ruang Aman Bersama.</p>`
+    });
+
   } catch (err) {
     res.status(500).json({ message: 'Gagal memperbarui status janji temu', error: err.message });
   }
