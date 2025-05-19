@@ -18,4 +18,13 @@ exports.findUserbyEmail = async (email) => {
     return result.rows[0];
 }
 
+exports.getAllUsers = async (req, res) =>{
+    try {
+    const result = await pool.query('select * from public.users');
+    res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({error: error.message});
+    }
+};
+
  
