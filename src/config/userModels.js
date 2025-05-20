@@ -45,3 +45,7 @@ exports.verifyUser = async (user_id) => {
 exports.deleteUser = async (user_id) => {
     await pool.query('DELETE FROM public.users WHERE user_id = $1', [user_id]);
 }
+
+exports.checkVerified= async (is_verified) => {
+  await pool.query()
+}

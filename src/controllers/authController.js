@@ -102,8 +102,11 @@ exports.loginUser = async (req, res) => {
         return res.status(401).json({ error: 'Email tidak ditemukan' });
       }
 
-      const passIsMatch = await bcrypt.compare(password, user.password_hash);
+      if (!user.is_verified) {
+        return res.status(403).json({ error: 'Akun belum diverifikasi. Cek email untuk verifikasi.' });
+      }
 
+      const passIsMatch = await bcrypt.compare(password, user.password_hash);
       if (!passIsMatch) {
         return res.status(401).json({ error: 'Password salah' });
       }
