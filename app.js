@@ -6,7 +6,7 @@ const doctorRoutes = require('./src/routes/doctorRoutes');
 const appointRoutes = require('./src/routes/appointmentRoutes');
 const cors = require('cors');
 const cookieparser = require('cookie-parser');
-require('./cleanup/cleanupUnverifiedUsers');
+require('./src/utils/cleanUpUnverified.js');
 
 
 //app.use
