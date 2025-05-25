@@ -84,3 +84,4 @@ exports.updateAppointmentStatus = async (req, res) => {
     res.status(500).json({ message: 'Gagal memperbarui status janji temu', error: err.message });
   }
 };
+

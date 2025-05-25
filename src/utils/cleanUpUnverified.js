@@ -3,10 +3,12 @@ const pool = require('../config/database');
 
 
 cron.schedule('0 * * * *', async () => {
+
+  console.log("🕒 Running cron job at", new Date());
   try {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 jam yang lalu
     const result = await pool.query(
-      'DELETE FROM users WHERE is_verified = false AND created_at < $1',
+      'DELETE FROM public.users WHERE is_verified = false AND created_at < $1',
       [oneHourAgo]
     );
     console.log(`🧹 Deleted ${result.rowCount} unverified user(s)`);

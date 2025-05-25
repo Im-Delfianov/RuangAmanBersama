@@ -33,7 +33,7 @@ return result.rows[0];
 };
 
 exports.verifyUser = async (user_id) => {
-  try{const result = await pool.query('UPDATE users SET is_verified = true WHERE user_id = $1', [user_id]);
+  try{const result = await pool.query('UPDATE public.users SET is_verified = true WHERE user_id = $1', [user_id]);
   return result.rowCount > 0;
   } catch (err) {
     console.error('Error saat memverifikasi user:', err);
@@ -46,6 +46,9 @@ exports.deleteUser = async (user_id) => {
     await pool.query('DELETE FROM public.users WHERE user_id = $1', [user_id]);
 }
 
-exports.checkVerified= async (is_verified) => {
-  await pool.query()
+
+
+
+exports.checkRole = async (user_id) => {
+  await pool.query('SELECT FROM public.users WHERE role = "admin"')
 }
