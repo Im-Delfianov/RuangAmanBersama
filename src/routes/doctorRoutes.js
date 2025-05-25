@@ -7,5 +7,6 @@ router.get('/', doctorController.getAllDoctors);
 router.get('/:id', doctorController.getDoctorById);
 router.post('/', authenticateToken, ifAdmin, doctorController.addDoctor); // bisa dibatasi hanya admin
 router.post('/:id/rate', authenticateToken, doctorController.rateDoctor);
+router.delete('/:id',authenticateToken, ifAdmin, doctorController.deleteDoctor);
 
 module.exports = router;

@@ -5,6 +5,10 @@ exports.getAllDoctors = async () => {
   return result.rows;
 };
 
+exports.deleteDoctor = async (doctorId) => {
+  await pool.query('DELETE FROM doctors WHERE doctor_id= $1', [doctorId])
+}
+
 exports.getDoctorById = async (doctorId) => {
   const result = await pool.query('SELECT * FROM doctors WHERE doctor_id = $1', [doctorId]);
   return result.rows[0];

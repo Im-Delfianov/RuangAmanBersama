@@ -44,3 +44,15 @@ exports.rateDoctor = async (req, res) => {
     res.status(500).json({ message: 'Gagal memberi rating', error: err.message });
   }
 };
+
+exports.deleteDoctor = async (req,res) => {
+  const id = req.params.id;
+
+    try {
+      await doctorModel.deleteDoctor(id);
+      res.status(200).json({message: 'berhasil menghapus dokter'});
+    } catch (error) {
+      res.status(500).json({message: 'gagal menghapus dokter'});
+    }
+  
+}
