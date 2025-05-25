@@ -2,6 +2,7 @@ const pool = require('../config/database');
 
 // Buat forum baru
 exports.createForum = async function ({ title, content, user_id }) {
+  
   const result = await pool.query(
     'INSERT INTO public.forums (id, title, content, user_id) VALUES (gen_random_uuid(), $1, $2, $3) RETURNING *',
     [title, content, user_id]
@@ -32,3 +33,7 @@ exports.getForumById = async function (forum_id) {
   `, [forum_id]);
   return result.rows[0];
 };
+
+exports.deleteForum = async function (forum_id) {
+  await pool.query('DELETE FROM public.forums WHERE id = $1', [forum_id])
+}

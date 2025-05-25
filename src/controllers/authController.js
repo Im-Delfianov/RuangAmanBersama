@@ -141,21 +141,21 @@ exports.loginUser = async (req, res) => {
     }
 };
 
-exports.refresh = (req, res) => {
-  const token = req.cookie.refreshToken;
-  if (!token) return res.sendstatus(401);
 
-  jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, decoded) =>{
-    if (err) return res.sendstatus(403);
+exports.refresh = async (req, res) => {
+  const token = req.cookies.refreshToken;
+  if (!token) return res.sendStatus(401);
 
-    const newAccessToken = jwt.sign(
-      {id : user.user_id},
-      process.env.ACCESS_TOKEN_SECRET,
-      {expiresIn: '15m'}
-    );
+  jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) =>{
+    if (err) return res.sendStatus(403);
 
-    res.json({ accessToken: newAccessToken });
-  });
+    const user = await userModel.findUserbyEmail(decoded.email);
+    if (!user) return res.sendStatus(404);
+
+    const newAccessToken = generateAccessToken(user);
+
+    res.json({ accessToken: newAccessToken });
+  });
 }
 
 exports.logout = (req, res) => {

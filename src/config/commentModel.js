@@ -40,9 +40,14 @@ async function getCommentsByUserId(user_id) {
     `, [user_id]);
 }
 
+async function deleteComment(comment_id) {
+  const result = await pool.query('DELETE FROM public.comments WHERE comment_id = $1', [comment_id])
+}
+
 module.exports = {
     createComment,
     getCommentsByForumId,
     getCommentsByCommentId,
-    getCommentsByUserId
+    getCommentsByUserId,
+    deleteComment
 };

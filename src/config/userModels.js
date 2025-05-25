@@ -18,13 +18,16 @@ exports.findUserbyEmail = async (email) => {
     return result.rows[0];
 }
 
-exports.getAllUsers = async (req, res) =>{
-    try {
+exports.findUserById = async (user_id) => {
+  const result = await pool.query('SELECT * FROM public.users WHERE user_id = $1', [user_id])
+
+  return result.rows[0];
+}
+
+exports.getAllUsers = async () =>{
     const result = await pool.query('select * from public.users');
-    res.json(result.rows);
-    } catch (error) {
-        res.status(500).json({error: error.message});
-    }
+    
+    return result.rows;
 };
 
 exports.findUserByVerificationToken = async (token) => {
@@ -33,7 +36,8 @@ return result.rows[0];
 };
 
 exports.verifyUser = async (user_id) => {
-  try{const result = await pool.query('UPDATE public.users SET is_verified = true WHERE user_id = $1', [user_id]);
+  try{
+    const result = await pool.query('UPDATE public.users SET is_verified = true WHERE user_id = $1', [user_id]);
   return result.rowCount > 0;
   } catch (err) {
     console.error('Error saat memverifikasi user:', err);
@@ -48,7 +52,16 @@ exports.deleteUser = async (user_id) => {
 
 
 
-
 exports.checkRole = async (user_id) => {
-  await pool.query('SELECT FROM public.users WHERE role = "admin"')
+  await pool.query('SELECT role FROM public.users WHERE user_id = $1', [user_id])
 }
+
+
+exports.updateUserById = async (id, alamat, phone_number, tanggal_lahir) => {
+  await pool.query(
+    `UPDATE users 
+     SET alamat = $1, phone_number = $2, tanggal_lahir = $3 
+     WHERE user_id = $4`,
+    [alamat, phone_number, tanggal_lahir, id]
+  );
+};

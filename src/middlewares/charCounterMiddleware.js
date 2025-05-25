@@ -1,0 +1,26 @@
+exports.forumCharCounter = (req, res, next) =>{
+const { title, content } = req.body;
+ const titleCharCount = title.length;
+  const contentCharCount = content.length;
+
+  if (titleCharCount > 500) {
+    return res.status(401).json({ message: 'Judul tidak boleh lebih dari 500 karakter' });
+  }
+
+  if (contentCharCount > 500) {
+    return res.status(401).json({ message: 'Isi tidak boleh lebih dari 500 karakter' });
+  }
+  
+  next();
+ }
+
+exports.commentCharCounter = (req, res, next) =>{
+const {content } = req.body;
+  const contentCharCount = content.length;
+
+  if (contentCharCount > 500) {
+    return res.status(401).json({ message: 'Isi tidak boleh lebih dari 500 karakter' });
+  }
+  
+  next();
+ }

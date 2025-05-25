@@ -1,5 +1,6 @@
 const appointmentModel = require('../config/appointmentModel');
 const { sendEmail } = require('../utils/sendEmailer');
+const doctorModel = require('../config/doctorModel');
 
 exports.createAppointment = async (req, res) => {
   try {
@@ -60,7 +61,7 @@ exports.updateAppointmentStatus = async (req, res) => {
     const { status } = req.body;
     const { id } = req.params;
 
-    const allowedStatus = ['pending', 'confirmed', 'canceled', 'completed'];
+    const allowedStatus = ['Menunggu', 'Diterima', 'Dibatalkan', 'Selesai'];
     if (!allowedStatus.includes(status)) {
       return res.status(400).json({ message: 'Status tidak valid' });
     }

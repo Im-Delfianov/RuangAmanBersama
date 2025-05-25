@@ -34,4 +34,14 @@ exports.getCommentsByForum = async (req, res) => {
 };
 
 
+exports.deleteComment = async (req, res) => {
+  const {commentId} = req.params;
 
+  if(!commentId) return res.status(404).json({ message: 'Komentar tidak ditemukan' });
+  try {
+    const comment = await commentModel.deleteComment(commentId);
+    res.status(200).json({message: 'Berhasil menghapus Komentar', comment});
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal menghapus komentar', error});
+  }
+}
