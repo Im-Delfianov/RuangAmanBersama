@@ -5,9 +5,9 @@ const doctorModel = require('../config/doctorModel');
 exports.createAppointment = async (req, res) => {
   try {
     const user_id = req.user.id;
-    const { doctor_id, scheduled_time, notes } = req.body;
+    const { doctor_id, hari, waktu, notes } = req.body;
 
-    if (!doctor_id || !scheduled_time) {
+    if (!doctor_id || !hari || !waktu) {
       return res.status(400).json({ message: 'Dokter dan waktu janji harus diisi' });
     }
 
@@ -16,7 +16,7 @@ exports.createAppointment = async (req, res) => {
       return res.status(404).json({ message: 'Dokter tidak ditemukan' });
     }
 
-    const newAppointment = await appointmentModel.createAppointment({ user_id, doctor_id, scheduled_time, notes });
+    const newAppointment = await appointmentModel.createAppointment({ user_id, doctor_id, hari, waktu, notes });
     res.status(201).json(newAppointment);
 
     

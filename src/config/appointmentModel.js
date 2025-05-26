@@ -1,10 +1,10 @@
 const db = require('./database');
 
-exports.createAppointment = async ({ user_id, doctor_id, appointment_time, notes }) => {
+exports.createAppointment = async ({ user_id, doctor_id, hari, waktu, notes }) => {
   const result = await db.query(
-    `INSERT INTO public.appointments (user_id, doctor_id, appointment_time, notes)
-     VALUES ($1, $2, $3, $4) RETURNING *`,
-    [user_id, doctor_id, appointment_time, notes]
+    `INSERT INTO public.appointments (user_id, doctor_id, hari, waktu, notes)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [user_id, doctor_id, hari, waktu, notes]
   );
   return result.rows[0];
 };
