@@ -9,7 +9,7 @@ const { forumCharCounter } = require('../middlewares/charCounterMiddleware');
 // Endpoint forum
 router.post('/', authenticateToken, forumCharCounter, forumController.createForum); // Buat forum (butuh login)
 router.get('/', forumController.getAllForums);                    // Ambil semua forum
-router.get('/:user_id', forumController.getForumByUserId);
+router.get('/user/:user_id', forumController.getForumByUserId);
 router.get('/:id', forumController.getForumById);                 // Ambil detail forum
 
 router.use('/:forumId/comments', commentRoutes);

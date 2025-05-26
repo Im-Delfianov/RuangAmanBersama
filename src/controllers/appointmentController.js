@@ -18,12 +18,16 @@ exports.createAppointment = async (req, res) => {
       return res.status(404).json({ message: 'Dokter tidak ditemukan' });
     }
 
+    const userData = await pool.query('SELECT email, full_name, phone_number FROM public.users WHERE user_id= $1', [user_id]);
+    const {email, full_name, phone_number} = userData.rows[0];
+    if(!phone_number) {return res.status(404).json({message: 'Nomor telepon tidak ditemukan, mohon diisi terlebih dahulu'})}
+
     const newAppointment = await appointmentModel.createAppointment({ user_id, doctor_id, hari, waktu, notes });
     res.status(201).json(newAppointment);
 
-    const userData = await pool.query('SELECT email, full_name FROM public.users WHERE user_id= $1', [user_id]);
+    
 
-    const {email, full_name} = userData.rows[0];
+    
     
     await sendEmail({
       to: email,
