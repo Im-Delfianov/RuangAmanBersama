@@ -48,6 +48,20 @@ exports.deleteForumById = async function (req,res) {
     await forumModel.deleteForum(forumId);
     res.status(200).json({message: 'berhasil menghapus forum'})
   } catch (error) {
-    res.status(500).json({message: 'gagal menghapus forum', error})
+    res.status(500).json({message: 'gagal menghapus forum', error});
   }
 };
+
+exports.getForumByUserId = async function (req, res) {
+  const {user_id} = req.params;
+
+  try {
+    const forum = await forumModel.getForumByUserId(user_id);
+
+    if(!forum) return res.status(404).json({ message: 'Forum tidak ditemukan' });
+
+    res.status(200).json({forum});
+  } catch (error) {
+    res.status(500).json({message: 'gagal mengambil data forum', error});
+  }
+}

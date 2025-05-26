@@ -15,11 +15,11 @@ exports.getDoctorById = async (doctorId) => {
 };
 
 exports.addDoctor = async (doctorData) => {
-  const { full_name, specialization, bio, email, phone_number, avatar_url, location, available_days } = doctorData;
+  const { full_name, specialization, bio, email, phone_number, avatar_url, location, hari, waktu } = doctorData;
   const result = await pool.query(
-    `INSERT INTO doctors (full_name, specialization, bio, email, phone_number, avatar_url, location, available_days)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-    [full_name, specialization, bio, email, phone_number, avatar_url, location, available_days]
+    `INSERT INTO doctors (full_name, specialization, bio, email, phone_number, avatar_url, location, hari, waktu)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    [full_name, specialization, bio, email, phone_number, avatar_url, location, hari, waktu]
   );
   return result.rows[0];
 };

@@ -1,11 +1,13 @@
 const appointmentModel = require('../config/appointmentModel');
 const { sendEmail } = require('../utils/sendEmailer');
 const doctorModel = require('../config/doctorModel');
+const pool = require('../config/database');
 
 exports.createAppointment = async (req, res) => {
   try {
     const user_id = req.user.id;
     const { doctor_id, hari, waktu, notes } = req.body;
+    
 
     if (!doctor_id || !hari || !waktu) {
       return res.status(400).json({ message: 'Dokter dan waktu janji harus diisi' });
@@ -19,15 +21,19 @@ exports.createAppointment = async (req, res) => {
     const newAppointment = await appointmentModel.createAppointment({ user_id, doctor_id, hari, waktu, notes });
     res.status(201).json(newAppointment);
 
+    const userData = await pool.query('SELECT email, full_name FROM public.users WHERE user_id= $1', [user_id]);
+
+    const {email, full_name} = userData.rows[0];
     
     await sendEmail({
-      to: req.user.email,
+      to: email,
       subject: 'Konfirmasi Janji Temu',
       html: `
-        <h3>Halo ${req.user.full_name},</h3>
+        <h3>Halo ${full_name},</h3>
         <p>Janji temu kamu dengan Bapak/Ibu ${doctor.full_name} berhasil dibuat.</p>
-        <p><strong>Waktu:</strong> ${new Date(scheduled_time).toLocaleString()}</p>
-        <p>Kami akan konfirmasi sesegera mungkin.</p>
+        <p><strong>Hari:</strong> ${newAppointment.hari}</p>
+        <p><strong>Waktu:</strong> ${newAppointment.waktu} WIB</p>
+        <p>Admin akan mengirimi kamu pesan via Whatsapp untuk mengonfirmasi lebih lanjut.</p>
         <br><p>Terima kasih 🙏</p>`
     });
 
