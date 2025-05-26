@@ -3,7 +3,7 @@ const { title, content } = req.body;
  const titleCharCount = title.length;
   const contentCharCount = content.length;
 
-  if (titleCharCount > 500) {
+  if (titleCharCount > 100) {
     return res.status(401).json({ message: 'Judul tidak boleh lebih dari 500 karakter' });
   }
 
