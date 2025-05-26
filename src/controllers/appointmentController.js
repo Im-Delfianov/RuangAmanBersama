@@ -86,3 +86,11 @@ exports.updateAppointmentStatus = async (req, res) => {
   }
 };
 
+exports.getAllAppointments = async (req, res) => {
+  try {
+          const allappointments = await appointmentModel.getAllAppointments();
+          res.status(200).json(allappointments);
+      } catch (err) {
+          res.status(500).json({ message: 'Gagal mengambil data jadwal', error: err.message });
+      }
+};
