@@ -39,8 +39,8 @@ exports.updateAppointmentStatus = async (appointment_id, status) => {
   return result.rows[0];
 };
 
-exports.getAllAppointments = async (req, res) => {
+exports.getAllAppointments = async () => {
   const result = await db.query('SELECT * FROM public.appointments');
-  res.json(result.rows)
+  return result.rows
 }
 
