@@ -2,9 +2,8 @@
   "name": "ruangamanbersama",
   "version": "1.0.0",
   "description": "aplikasi ruang aman bersama project PPL 1",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "test": "jest",
     "start": "node server.js"
   },
   "author": "",
