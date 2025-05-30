@@ -1,4 +1,5 @@
 const userModels = require('../config/userModels');
+const supabase = require('../config/supabaseClient');
 
 
 exports.getAllUsers = async (req, res) => {
@@ -64,3 +65,66 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+exports.updatePict = async (req, res) => {
+     const userId = req.params.id;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    try {
+    const existingUser = await userModels.findUserById(userId);
+    const oldAvatarUrl = existingUser?.avatar_url;
+
+    if (oldAvatarUrl && !oldAvatarUrl.includes('avatar-default.png')) {
+      const oldFilePath = oldAvatarUrl.split('/storage/v1/object/public/images/')[1];
+      await supabase.storage.from('images').remove([oldFilePath]);
+    }
+
+    const ext = file.originalname.split('.').pop();
+    const timestamp = Date.now();
+    const fileName = `${userId}-${timestamp}.${ext}`;
+    const filePath = `avatar/${userId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('images')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (uploadError) {
+      return res.status(500).json({ message: 'Upload ke Supabase gagal', detail: uploadError.message });
+    }
+
+    const { data: publicData } = supabase.storage
+      .from('images')
+      .getPublicUrl(filePath);
+
+    const avatarUrl = publicData.publicUrl;
+
+    await userModels.updatePictById(userId, avatarUrl);
+
+    res.json({ message: 'Foto profil berhasil diupdate', avatar_url: avatarUrl });
+  } catch (error) {
+    console.error('Error update avatar:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+exports.updateRole = async (req, res) => {
+  const user_id = req.params.id;
+  const role = req.body;
+
+  if(!user_id){return res.status(404).json({message: 'pengguna tidak ditemukan'})};
+
+  try {
+    await userModels.updateRole(role, user_id);
+
+    res.json({message: 'Role telah diganti', user_id: user_id, role: role});
+    
+  } catch (error) {
+    return res.status(500).json({message: 'gagal mengganti role'});
+  }
+}

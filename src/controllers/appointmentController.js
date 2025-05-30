@@ -1,7 +1,7 @@
 const appointmentModel = require('../config/appointmentModel');
 const { sendEmail } = require('../utils/sendEmailer');
 const doctorModel = require('../config/doctorModel');
-const pool = require('../config/database');
+const userModels = require('../config/userModels');
 
 exports.createAppointment = async (req, res) => {
   try {
@@ -18,22 +18,19 @@ exports.createAppointment = async (req, res) => {
       return res.status(404).json({ message: 'Dokter tidak ditemukan' });
     }
 
-    const userData = await pool.query('SELECT email, full_name, phone_number FROM public.users WHERE user_id= $1', [user_id]);
-    const {email, full_name, phone_number} = userData.rows[0];
-    if(!phone_number) {return res.status(404).json({message: 'Nomor telepon tidak ditemukan, mohon diisi terlebih dahulu'})}
+    const userData= await userModels.findUserById(user_id);
+    if(!userData.phone_number) {return res.status(404).json({message: 'nomor telepon tidak ditemukan, silahkan isi nomor telepon terlebih dahulu'})}
 
     const newAppointment = await appointmentModel.createAppointment({ user_id, doctor_id, hari, waktu, notes });
     res.status(201).json(newAppointment);
-
     
-
-    
+  
     
     await sendEmail({
-      to: email,
+      to:userData.email,
       subject: 'Konfirmasi Janji Temu',
       html: `
-        <h3>Halo ${full_name},</h3>
+        <h3>Halo ${userData.full_name},</h3>
         <p>Janji temu kamu dengan Bapak/Ibu ${doctor.full_name} berhasil dibuat.</p>
         <p><strong>Hari:</strong> ${newAppointment.hari}</p>
         <p><strong>Waktu:</strong> ${newAppointment.waktu} WIB</p>

@@ -39,6 +39,12 @@ exports.deleteForum = async function (forum_id) {
 }
 
 exports.getForumByUserId = async (user_id) => {
-  const result = await pool.query('SELECT * FROM public.forums WHERE user_id = $1', [user_id]);
+  const result = await pool.query(`
+    SELECT f.id, f.title, f.content, f.created_at,
+           u.user_id, u.username, u.full_name, u.avatar_url
+    FROM public.forums f
+    JOIN public.users u on f.user_id = u.user_id
+    WHERE f.user_id = $1`, 
+    [user_id]);
   return result.rows;
 }

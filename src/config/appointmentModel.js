@@ -22,7 +22,7 @@ exports.getAppointmentsByUser = async (user_id) => {
 
 exports.getAppointmentsByDoctor = async (doctor_id) => {
   const result = await db.query(
-    `SELECT a.*, u.full_name AS user_name
+    `SELECT a.*, u.full_name AS name
      FROM public.appointments a
      JOIN users u ON a.user_id = u.user_id
      WHERE a.doctor_id = $1 ORDER BY appointment_time DESC`,

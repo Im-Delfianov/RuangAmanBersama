@@ -41,7 +41,7 @@ exports.verifyUser = async (user_id) => {
   return result.rowCount > 0;
   } catch (err) {
     console.error('Error saat memverifikasi user:', err);
-    throw err; // biar bisa ditangani di controller
+    throw err; 
   }
 };
  
@@ -50,18 +50,55 @@ exports.deleteUser = async (user_id) => {
     await pool.query('DELETE FROM public.users WHERE user_id = $1', [user_id]);
 }
 
+exports.updateRole = async (role, user_id) => {
+  await pool.query('UPDATE users SET role = $1 WHERE user_id = $2', [role, user_id]);
+}
+
 
 
 exports.checkRole = async (user_id) => {
-  await pool.query('SELECT role FROM public.users WHERE user_id = $1', [user_id])
+  const result = await pool.query('SELECT role FROM public.users WHERE user_id = $1', [user_id])
+  return result.rows[0];
 }
 
 
 exports.updateUserById = async (id, alamat, phone_number, tanggal_lahir) => {
-  await pool.query(
+  const updatedUser = await pool.query(
     `UPDATE users 
-     SET alamat = $1, phone_number = $2, tanggal_lahir = $3 
+     SET alamat = $1, phone_number = $2, tanggal_lahir = $3
      WHERE user_id = $4`,
     [alamat, phone_number, tanggal_lahir, id]
+  );
+  return updatedUser.rows[0];
+};
+
+exports.updatePictById = async (user_id, avatar_url) =>{
+  const updatedPict = await pool.query(`
+    update users set avatar_url = $1 
+    WHERE user_id = $2`, 
+    [avatar_url, user_id]
+  );
+    return updatedPict.rows[0];
+}
+
+exports.saveResetToken = async (userId, token, expiresAt) => {
+  await pool.query(
+    'UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE user_id = $3',
+    [token, expiresAt, userId]
+  );
+};
+
+exports.findUserByResetToken = async (token) => {
+  const result = await pool.query(
+    'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expiry > NOW()',
+    [token]
+  );
+  return result.rows[0];
+};
+
+exports.updatePassword = async (userId, hashedPassword) => {
+  await pool.query(
+    `UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = $2`,
+    [hashedPassword, userId]
   );
 };

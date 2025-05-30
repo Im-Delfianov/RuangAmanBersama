@@ -20,7 +20,7 @@ function generateAccessToken(user) {
     },
     process.env.ACCESS_TOKEN_SECRET,
 
-    { expiresIn: '2h' }
+    { expiresIn: '1h' }
   );
 
 }
@@ -64,13 +64,13 @@ exports.registerUser = async (req, res) => {
       })
 
       const verificationToken = jwt.sign(
-        { user_id: newUser.user_id },  // pastikan newUser mengembalikan user_id
+        { user_id: newUser.user_id },  
         process.env.EMAIL_VERIFICATION_SECRET,
         { expiresIn: '1d' } // token berlaku 1 hari
       );
 
 
-      const verifyLink = `${process.env.BASE_URL}/auth/verify-email?token=${verificationToken}`;
+      const verifyLink = `${process.env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
 
       await sendEmail({
         to: email,
@@ -203,7 +203,7 @@ exports.resendVerificationEmail = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    const verifyLink = `${process.env.BASE_URL}/auth/verify-email?token=${token}`;
+    const verifyLink = `${process.env.FRONTEND_URL}/auth/verify-email?token=${token}`;
 
     await sendEmail({
       to: email,
@@ -224,6 +224,51 @@ exports.resendVerificationEmail = async (req, res) => {
 };
 
 
+
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await userModel.findUserbyEmail(email);
+    if (!user) return res.status(404).json({ error: 'Email tidak ditemukan' });
+
+    const token = jwt.sign(
+      { userId: user.user_id }, 
+      process.env.ACCESS_TOKEN_SECRET, 
+      { expiresIn: '1h' }
+    );
+
+    const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${token}`;
+    await userModel.saveResetToken(user.user_id, token, new Date(Date.now() + 3600000)); // 1 jam
+
+    await sendEmail({
+      to: email,
+      subject: 'Reset Password',
+      html: `<p>Klik link berikut untuk mengubah password:</p><a href="${resetLink}">${resetLink}</a>`,
+    });
+
+    res.json({ message: 'Link reset password telah dikirim ke email Anda' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+  try {
+    const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const user = await userModel.findUserByResetToken(token);
+    if (!user) return res.status(400).json({ error: 'Token tidak valid atau sudah expired' });
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await userModel.updatePassword(user.user_id, hashed);
+
+    res.json({ message: 'Password berhasil diperbarui' });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: 'Token tidak valid atau expired' });
+  }
+};
 
 
 
