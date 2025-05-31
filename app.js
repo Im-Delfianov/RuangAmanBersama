@@ -8,6 +8,7 @@ const userRoutes = require('./src/routes/userRoutes');
 const cors = require('cors');
 const cookieparser = require('cookie-parser');
 require('./src/utils/cleanUpUnverified.js');
+require('dotenv').config();
 
 
 //app.use

@@ -94,7 +94,7 @@ exports.registerUser = async (req, res) => {
 
 
 exports.loginUser = async (req, res) => {
-    const {email, password,} = req.body;
+    const {email, password} = req.body;
 
     try{
       const user = await userModel.findUserbyEmail(email)
@@ -105,8 +105,10 @@ exports.loginUser = async (req, res) => {
       if (!user.is_verified) {
         return res.status(403).json({ error: 'Akun belum diverifikasi. Cek email untuk verifikasi.' });
       }
+      
+      const hashed_password = await userModel.userLogin(email)
 
-      const passIsMatch = await bcrypt.compare(password, user.password_hash);
+      const passIsMatch = await bcrypt.compare(password, hashed_password);
       if (!passIsMatch) {
         return res.status(401).json({ error: 'Password salah' });
       }
