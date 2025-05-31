@@ -5,8 +5,8 @@ const { authenticateToken, ifAdmin } = require('../middlewares/authMiddleware');
 const { uploadAvatar } = require('../middlewares/multerMiddleware');
 
 
-router.get('/', userController.getAllUsers);
-router.get('/:id',userController.findUserById);
+router.get('/', authenticateToken, ifAdmin, userController.getAllUsers);
+router.get('/:id',authenticateToken, userController.findUserById);
 router.delete('/:id',authenticateToken, ifAdmin, userController.deleteUserbyId);
 router.post('/update/:id', authenticateToken, userController.updateUser);
 router.post('/update/:id/avatar', authenticateToken, uploadAvatar.single('avatar'), userController.updatePict)

@@ -30,7 +30,7 @@ exports.deleteUserbyId = async (req, res) =>{
 exports.findUserById = async (req, res) => {
     const {id} = await req.params;
 
-    if (!id || isNaN(parseInt(id))) {
+    if (!id) {
     return res.status(400).json({ message: 'ID pengguna tidak valid.' });
     }
 

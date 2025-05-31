@@ -66,6 +66,10 @@ exports.rateDoctor = async (req, res) => {
       return res.status(403).json({ message: 'Kamu belum pernah membuat janji dengan dokter ini' });
     }
 
+    const alreadyRated = await doctorModel.hasRated(user_id, doctor_id);
+    if (alreadyRated) {
+      return res.status(400).json({ message: 'Kamu sudah memberi rating untuk dokter ini' });
+    }
     if (rating < 1 || rating > 5) {
       return res.status(400).json({ message: 'Rating harus antara 1 hingga 5' });
     }

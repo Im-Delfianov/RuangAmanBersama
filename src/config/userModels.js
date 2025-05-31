@@ -13,27 +13,23 @@ exports.createUser = async (user) => {
 
 
 exports.findUserbyEmail = async (email) => {
-    const result = await pool.query('SELECT * FROM public.users WHERE email = $1', [email])
+    const result = await pool.query('SELECT * FROM users_public WHERE email = $1', [email])
 
     return result.rows[0];
 }
 
 exports.findUserById = async (user_id) => {
-  const result = await pool.query('SELECT * FROM public.users WHERE user_id = $1', [user_id])
+  const result = await pool.query('SELECT * FROM users_public WHERE user_id = $1', [user_id])
 
   return result.rows[0];
 }
 
 exports.getAllUsers = async () =>{
-    const result = await pool.query('select * from public.users');
+    const result = await pool.query('select * from users_public');
     
     return result.rows;
 };
 
-exports.findUserByVerificationToken = async (token) => {
-const result = await pool.query('SELECT * FROM public.users WHERE verification_token = $1', [token]);
-return result.rows[0];
-};
 
 exports.verifyUser = async (user_id) => {
   try{

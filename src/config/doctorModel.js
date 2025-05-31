@@ -72,3 +72,11 @@ exports.updateDoctor = async(doctor_id, full_nameBaru, specializationBaru, bioBa
   )
   return result.rows[0];
 }
+
+exports.hasRated = async (user_id, doctor_id) => {
+  const result = await pool.query(
+    'SELECT 1 FROM doctor_ratings WHERE user_id = $1 AND doctor_id = $2 LIMIT 1',
+    [user_id, doctor_id]
+  );
+  return result.rowCount > 0;
+}

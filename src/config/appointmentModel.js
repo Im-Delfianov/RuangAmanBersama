@@ -14,7 +14,7 @@ exports.getAppointmentsByUser = async (user_id) => {
     `SELECT a.*, d.full_name AS doctor_name, d.specialization
      FROM public.appointments a
      JOIN doctors d ON a.doctor_id = d.doctor_id
-     WHERE a.user_id = $1 ORDER BY appointment_time DESC`,
+     WHERE a.user_id = $1 ORDER BY created_at DESC`,
     [user_id]
   );
   return result.rows;
@@ -25,7 +25,7 @@ exports.getAppointmentsByDoctor = async (doctor_id) => {
     `SELECT a.*, u.full_name AS name
      FROM public.appointments a
      JOIN users u ON a.user_id = u.user_id
-     WHERE a.doctor_id = $1 ORDER BY appointment_time DESC`,
+     WHERE a.doctor_id = $1 ORDER BY created_at DESC`,
     [doctor_id]
   );
   return result.rows;
@@ -40,7 +40,13 @@ exports.updateAppointmentStatus = async (appointment_id, status) => {
 };
 
 exports.getAllAppointments = async () => {
-  const result = await db.query('SELECT * FROM public.appointments');
+  const result = await db.query(
+    `SELECT a.appointment_id, u.full_name AS user_name, d.full_name AS doctor_name, a.waktu, a.hari, a.status
+     FROM public.appointments a
+     JOIN users u ON a.user_id = u.user_id
+     JOIN doctors d ON a.doctor_id = d.doctor_id ORDER BY user_name ASC`
+  );
   return result.rows
 }
+
 
