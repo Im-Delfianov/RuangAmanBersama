@@ -3,6 +3,8 @@ const pool = require('./src/config/database')
 
 require('dotenv').config();
 
+
+
 const port = process.env.PORT || 5000;
 
 //mulai server
@@ -25,6 +27,13 @@ async function shutdown() {
 
   process.exit(0);
 }
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown); 
