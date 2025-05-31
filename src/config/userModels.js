@@ -38,7 +38,6 @@ return result.rows[0];
 exports.verifyUser = async (user_id) => {
   try{
     const result = await pool.query('UPDATE public.users SET is_verified = true WHERE user_id = $1', [user_id]);
-  return result.rowCount > 0;
   } catch (err) {
     console.error('Error saat memverifikasi user:', err);
     throw err; 
