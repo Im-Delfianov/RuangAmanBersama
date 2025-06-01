@@ -7,6 +7,7 @@ const appointRoutes = require('./src/routes/appointmentRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const cors = require('cors');
 const cookieparser = require('cookie-parser');
+
 require('./src/utils/cleanUpUnverified.js');
 require('dotenv').config();
 
@@ -16,9 +17,8 @@ app.use(cors({
   origin: process.env.FRONTEND_URL, 
   credentials: true
 }));
-
 app.use(express.json());
-app.use(cookieparser())
+app.use(cookieparser());
 
 
 //routes

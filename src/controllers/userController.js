@@ -44,7 +44,7 @@ exports.findUserById = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   const userId = req.params.id;
-  const { alamat, phone_number, tanggal_lahir } = req.body;
+  const { username, full_name, alamat, phone_number, tanggal_lahir } = req.body;
 
   try {
     const existingUser = await userModels.findUserById(userId);
@@ -52,11 +52,14 @@ exports.updateUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    
     const alamatBaru = alamat ?? existingUser.alamat;
     const phoneBaru = phone_number ?? existingUser.phone_number;
     const tanggalBaru = tanggal_lahir ?? existingUser.tanggal_lahir;
+    const usernameBaru = username ?? existingUser.username;
+    const full_nameBaru = full_name ?? existingUser.full_name;
 
-    await userModels.updateUserById(userId, alamatBaru, phoneBaru, tanggalBaru);
+    await userModels.updateUserById(userId, alamatBaru, phoneBaru, tanggalBaru, usernameBaru, full_nameBaru);
 
     res.json({ message: 'User updated successfully' });
 

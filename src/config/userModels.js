@@ -3,10 +3,10 @@ const pool = require('../config/database');
 
 
 exports.createUser = async (user) => {
-    const {email, password_hash, username, full_name} = user;
+    const {email, password_hash, username, full_name, provider} = user;
 
-    const newUser = await pool.query(`INSERT INTO public.users (user_id, email, password_hash, username, full_name, is_verified, created_at) VALUES (gen_random_uuid(), $1, $2, $3, $4, false, now()) RETURNING user_id, email, password_hash, username, role, full_name, is_verified, created_at`,
-      [email, password_hash, username, full_name]);
+    const newUser = await pool.query(`INSERT INTO public.users (user_id, email, password_hash, username, full_name, is_verified, created_at, provider) VALUES (gen_random_uuid(), $1, $2, $3, $4, false, now(), $5) RETURNING user_id, email, password_hash, username, role, full_name, is_verified, created_at, provider`,
+      [email, password_hash, username, full_name, provider]);
 
       return newUser.rows[0];
 }
@@ -16,6 +16,11 @@ exports.findUserbyEmail = async (email) => {
     const result = await pool.query('SELECT * FROM users_public WHERE email = $1', [email])
 
     return result.rows[0];
+}
+
+exports.findUserbyUsername = async(username) => {
+  const result = await pool.query('SELECT * FROM users_public WHERE username = $1', [username])
+  return result.rowCount > 0;
 }
 
 exports.findUserById = async (user_id) => {
@@ -57,12 +62,12 @@ exports.checkRole = async (user_id) => {
 }
 
 
-exports.updateUserById = async (id, alamat, phone_number, tanggal_lahir) => {
+exports.updateUserById = async (id, alamat, phone_number, tanggal_lahir, username, full_name) => {
   const updatedUser = await pool.query(
     `UPDATE users 
-     SET alamat = $1, phone_number = $2, tanggal_lahir = $3
-     WHERE user_id = $4`,
-    [alamat, phone_number, tanggal_lahir, id]
+     SET alamat = $1, phone_number = $2, tanggal_lahir = $3, username = $4, full_name = $5
+     WHERE user_id = $6`,
+    [alamat, phone_number, tanggal_lahir, username, full_name, id]
   );
   return updatedUser.rows[0];
 };
@@ -98,7 +103,7 @@ exports.updatePassword = async (userId, hashedPassword) => {
   );
 };
 
-exports.userLogin = async (email) =>{
+exports.userPass = async (email) =>{
   const result = await pool.query(`
     SELECT password_hash FROM users WHERE email= $1
   `, [email]);

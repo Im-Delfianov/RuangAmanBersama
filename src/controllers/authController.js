@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const userModel = require('../config/userModels')
 const jwt = require('jsonwebtoken')
 const { sendEmail } = require('../utils/sendEmailer');
+const { OAuth2Client } = require('google-auth-library');
+require('dotenv').config();
 
 app.use(express.json());
 app.use(bodyParser.json());
@@ -35,7 +37,58 @@ function generateRefreshToken(user) {
 
 
 
+exports.googleRegister = async (req, res) => {
+  const { id_token } = req.body;
+  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  if (!id_token) return res.status(400).json({ message: 'ID Token is required' });
 
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name } = payload;
+
+    // Cek apakah user sudah ada
+    let user = await userModel.findUserbyEmail(email);
+
+    if (user){return res.status(400).json({message: 'User telah terdaftar, silahkan login'})};
+
+
+    if (!user) {
+      // Generate username dari email jika belum dikirim dari frontend
+      let username;
+      let existingUser;
+      do {
+      username = `User${Math.floor(10000 + Math.random() * 90000)}`;
+      existingUser = await userModel.findUserbyUsername(username); // Pastikan tidak dobel
+      } while (existingUser);
+
+      // Simpan user baru
+      user = await userModel.createUser({
+        email,
+        password_hash: null, // karena pakai Google
+        username,
+        full_name: name,
+        provider: 'google',
+      });
+    }
+
+    // Buat JWT
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(200).json({ token, user });
+  } catch (err) {
+    console.error('Google register error:', err);
+    res.status(500).json({ message: 'Failed to register with Google' });
+  }
+};
 
 
 
@@ -49,18 +102,15 @@ exports.registerUser = async (req, res) => {
       if (existingEmail) {
         return res.status(409).json({ error: 'Email sudah digunakan' });
       }  
-
-
        // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
-
-      
 
       const newUser = await userModel.createUser({
         email,
         password_hash: hashedPassword,
         username,
-        full_name
+        full_name,
+        provider: 'local'
       })
 
       const verificationToken = jwt.sign(
@@ -92,6 +142,39 @@ exports.registerUser = async (req, res) => {
   
 };
 
+exports.googleLogin = async (req, res) => {
+  const { id_token } = req.body;
+  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  if (!id_token) return res.status(400).json({ message: 'ID Token is required' });
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email } = payload;
+
+    const user = await userModel.findByEmail(email);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found. Please register first.' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(200).json({ token, user });
+  } catch (err) {
+    console.error('Google login error:', err);
+    res.status(500).json({ message: 'Login with Google failed' });
+  }
+};
+
 
 exports.loginUser = async (req, res) => {
     const {email, password} = req.body;
@@ -106,7 +189,7 @@ exports.loginUser = async (req, res) => {
         return res.status(403).json({ error: 'Akun belum diverifikasi. Cek email untuk verifikasi.' });
       }
       
-      const {password_hash}= await userModel.userLogin(email)
+      const {password_hash}= await userModel.userPass(email)
 
       const passIsMatch = await bcrypt.compare(password, password_hash);
       if (!passIsMatch) {
@@ -134,8 +217,6 @@ exports.loginUser = async (req, res) => {
           role: user.role
         }
       });
-
-      
   
     }catch (err) {
       console.error(err);
@@ -245,7 +326,7 @@ exports.forgotPassword = async (req, res) => {
     await sendEmail({
       to: email,
       subject: 'Reset Password',
-      html: `<p>Klik link berikut untuk mengubah password:</p><a href="${resetLink}">${resetLink}</a>`,
+      html: `<p>Klik link berikut untuk mengubah password:</p><a href="${resetLink}">Klik disini untuk mengganti password</a>`,
     });
 
     res.json({ message: 'Link reset password telah dikirim ke email Anda' });
