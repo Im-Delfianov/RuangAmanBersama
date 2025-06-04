@@ -74,16 +74,15 @@ exports.googleRegister = async (req, res) => {
         full_name: name,
         provider: 'google',
       });
+
+      user = userModel.findUserbyEmail(user.email)
+      await userModel.verifyUser(user.user_id);
     }
 
-    // Buat JWT
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: '7d' }
-    );
 
-    res.status(200).json({ token, user });
+    
+
+    res.status(200).json({ user });
   } catch (err) {
     console.error('Google register error:', err);
     res.status(500).json({ message: 'Failed to register with Google' });
@@ -120,7 +119,7 @@ exports.registerUser = async (req, res) => {
       );
 
 
-      const verifyLink = `${process.env.BACKEND_URL}/auth/verify-email?token=${verificationToken}`;
+      const verifyLink = `${process.env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
 
       await sendEmail({
         to: email,
@@ -156,19 +155,33 @@ exports.googleLogin = async (req, res) => {
     const payload = ticket.getPayload();
     const { email } = payload;
 
-    const user = await userModel.findByEmail(email);
+    const user = await userModel.findUserbyEmail(email);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found. Please register first.' });
     }
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: '7d' }
-    );
+    const accessToken= generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
 
-    res.status(200).json({ token, user });
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
+
+      res.status(200).json({
+        message: 'Login berhasil',
+        accessToken,
+        user: {
+          id: user.user_id,
+          email: user.email,
+          username: user.username,
+          full_name: user.full_name,
+          role: user.role
+        }
+      });
   } catch (err) {
     console.error('Google login error:', err);
     res.status(500).json({ message: 'Login with Google failed' });
@@ -178,9 +191,12 @@ exports.googleLogin = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
     const {email, password} = req.body;
+    console.log("Email:", email);
+    console.log("password:", password);
 
     try{
       const user = await userModel.findUserbyEmail(email)
+      console.log("user", user);
       if (!user) {
         return res.status(401).json({ error: 'Email tidak ditemukan' });
       }
@@ -190,7 +206,7 @@ exports.loginUser = async (req, res) => {
       }
       
       const {password_hash}= await userModel.userPass(email)
-
+      console.log("password hash", password_hash);
       const passIsMatch = await bcrypt.compare(password, password_hash);
       if (!passIsMatch) {
         return res.status(401).json({ error: 'Password salah' });
@@ -220,7 +236,7 @@ exports.loginUser = async (req, res) => {
   
     }catch (err) {
       console.error(err);
-      return res.status(500).json({ error: 'Terjadi kesalahan saat login' });
+      return res.status(500).json({ error: 'Terjadi kesalahan saat login', err });
     }
 };
 
@@ -286,7 +302,7 @@ exports.resendVerificationEmail = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    const verifyLink = `${process.env.BACKEND_URL}/auth/verify-email?token=${token}`;
+    const verifyLink = `${process.env.FRONTEND_URL}/auth/verify-email?token=${token}`;
 
     await sendEmail({
       to: email,
@@ -320,7 +336,7 @@ exports.forgotPassword = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    const resetLink = `${process.env.BACKEND_URL}/auth/reset-password?token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${token}`;
     await userModel.saveResetToken(user.user_id, token, new Date(Date.now() + 3600000)); // 1 jam
 
     await sendEmail({

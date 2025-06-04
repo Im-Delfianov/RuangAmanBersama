@@ -118,7 +118,7 @@ exports.updatePict = async (req, res) => {
 
 exports.updateRole = async (req, res) => {
   const user_id = req.params.id;
-  const role = req.body;
+  const {role} = req.body;
 
   if(!user_id){return res.status(404).json({message: 'pengguna tidak ditemukan'})};
 
