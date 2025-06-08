@@ -77,9 +77,7 @@ exports.updateAppointmentStatus = async (req, res) => {
     if (!updated) return res.status(404).json({ message: 'Janji temu tidak ditemukan' });
 
     
-    console.log('userID', id);
-    const userData = await userModels.findUserById(id);
-    console.log('userData', userData);
+    const userData = await userModels.findUserById(updated.user_id);
 
     await sendEmail({
       to: userData.email,
