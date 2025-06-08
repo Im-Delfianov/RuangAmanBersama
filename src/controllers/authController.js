@@ -246,6 +246,7 @@ exports.refresh = async (req, res) => {
     if (err) return res.sendStatus(403);
 
     const user = await userModel.findUserbyEmail(decoded.email);
+    console.log("User:", user);
     if (!user) return res.sendStatus(404);
 
     const newAccessToken = generateAccessToken(user);
