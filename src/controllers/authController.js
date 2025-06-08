@@ -191,12 +191,9 @@ exports.googleLogin = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
     const {email, password} = req.body;
-    console.log("Email:", email);
-    console.log("password:", password);
 
     try{
       const user = await userModel.findUserbyEmail(email)
-      console.log("user", user);
       if (!user) {
         return res.status(401).json({ error: 'Email tidak ditemukan' });
       }
@@ -206,7 +203,6 @@ exports.loginUser = async (req, res) => {
       }
       
       const {password_hash}= await userModel.userPass(email)
-      console.log("password hash", password_hash);
       const passIsMatch = await bcrypt.compare(password, password_hash);
       if (!passIsMatch) {
         return res.status(401).json({ error: 'Password salah' });
@@ -253,6 +249,7 @@ exports.refresh = async (req, res) => {
     if (!user) return res.sendStatus(404);
 
     const newAccessToken = generateAccessToken(user);
+    console.log("AccessToken:", newAccessToken);
 
     res.json({ accessToken: newAccessToken });
   });
