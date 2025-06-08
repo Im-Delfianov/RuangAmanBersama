@@ -76,9 +76,10 @@ exports.updateAppointmentStatus = async (req, res) => {
     const updated = await appointmentModel.updateAppointmentStatus(id, status);
     if (!updated) return res.status(404).json({ message: 'Janji temu tidak ditemukan' });
 
-    res.json(updated);
-
+    
+    console.log('userID', id);
     const userData = await userModels.findUserById(id);
+    console.log('userData', userData);
 
     await sendEmail({
       to: userData.email,
@@ -90,6 +91,8 @@ exports.updateAppointmentStatus = async (req, res) => {
         <p>Status terbaru: <strong>${status}</strong></p>
         <br><p>Terima kasih telah mempercayakan Ruang Aman Bersama.</p>`
     });
+
+    res.json(updated);
 
   } catch (err) {
     res.status(500).json({ message: 'Gagal memperbarui status janji temu', error: err.message });
