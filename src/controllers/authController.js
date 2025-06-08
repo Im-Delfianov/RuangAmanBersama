@@ -245,7 +245,7 @@ exports.refresh = async (req, res) => {
   jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) =>{
     if (err) return res.sendStatus(403);
 
-    const user = await userModel.findUserbyEmail(decoded.email);
+    const user = await userModel.findUserById(decoded.id);
     console.log("User:", user);
     if (!user) return res.sendStatus(404);
 
