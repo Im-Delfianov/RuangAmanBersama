@@ -34,7 +34,7 @@ exports.createAppointment = async (req, res) => {
         <p>Janji temu kamu dengan Bapak/Ibu ${doctor.full_name} berhasil dibuat.</p>
         <p><strong>Hari:</strong> ${newAppointment.hari}</p>
         <p><strong>Waktu:</strong> ${newAppointment.waktu} WIB</p>
-        <p>Admin akan mengirimi kamu pesan via Whatsapp untuk mengonfirmasi lebih lanjut.</p>
+        <p>Admin akan mengirimi kamu pesan via Whatsapp untuk mengonfirmasi lebih lanjut. Silahkan cek email secara berkala untuk melihat status janji temu</p>
         <br><p>Terima kasih 🙏</p>`
     });
 
@@ -78,14 +78,17 @@ exports.updateAppointmentStatus = async (req, res) => {
 
     res.json(updated);
 
+    const userData = await userModels.findUserById(id);
+
     await sendEmail({
-      to: appointment.user_email,
+      to: userData.email,
       subject: 'Update Status Janji Temu',
       html: `
         <h3>Status Janji Temu Diubah</h3>
-        <p>Waktu: ${new Date(appointment.scheduled_time).toLocaleString()}</p>
+        <p><strong>Hari:</strong> ${updated.hari}</p>
+        <p><strong>Waktu:</strong> ${updated.waktu} WIB</p>
         <p>Status terbaru: <strong>${status}</strong></p>
-        <br><p>Terima kasih telah menggunakan Ruang Aman Bersama.</p>`
+        <br><p>Terima kasih telah mempercayakan Ruang Aman Bersama.</p>`
     });
 
   } catch (err) {

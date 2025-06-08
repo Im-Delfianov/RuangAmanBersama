@@ -239,18 +239,15 @@ exports.loginUser = async (req, res) => {
 
 exports.refresh = async (req, res) => {
   const token = req.cookies.refreshToken;
-   console.log("Incoming refresh token:", token); // ← Tambah in
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) =>{
     if (err) return res.sendStatus(403);
 
     const user = await userModel.findUserById(decoded.id);
-    console.log("User:", user);
     if (!user) return res.sendStatus(404);
 
     const newAccessToken = generateAccessToken(user);
-    console.log("AccessToken:", newAccessToken);
 
     res.json({ accessToken: newAccessToken });
   });
