@@ -217,8 +217,8 @@ exports.loginUser = async (req, res) => {
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Strict',
+        secure: true,
+        sameSite: 'None',
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
 
@@ -243,6 +243,7 @@ exports.loginUser = async (req, res) => {
 
 exports.refresh = async (req, res) => {
   const token = req.cookies.refreshToken;
+   console.log("Incoming refresh token:", token); // ← Tambah in
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) =>{
@@ -258,7 +259,7 @@ exports.refresh = async (req, res) => {
 }
 
 exports.logout = (req, res) => {
-  res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'Strict' });
+  res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'None' });
   res.json({ message: 'Logout berhasil' });
 };
 
