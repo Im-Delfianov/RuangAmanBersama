@@ -31,11 +31,11 @@ exports.createAppointment = async (req, res) => {
       subject: 'Konfirmasi Janji Temu',
       html: `
         <h3>Halo ${userData.full_name},</h3>
-        <p>Janji temu kamu dengan Bapak/Ibu ${doctor.full_name} berhasil dibuat.</p>
+        <p>Janji temu kamu dengan ${doctor.full_name} berhasil dibuat.</p>
         <p><strong>Hari:</strong> ${newAppointment.hari}</p>
         <p><strong>Waktu:</strong> ${newAppointment.waktu} WIB</p>
-        <p>Admin akan mengirimi kamu pesan via Whatsapp untuk mengonfirmasi lebih lanjut. Silahkan cek email secara berkala untuk melihat status janji temu</p>
-        <br><p>Terima kasih 🙏</p>`
+        <p>Admin akan mengirimi kamu pesan via Whatsapp untuk mengonfirmasi lebih lanjut. Silahkan cek email secara berkala untuk melihat status janji temu.</p>
+        <br><p>Terima kasih</p>`
     });
 
   } catch (err) {
