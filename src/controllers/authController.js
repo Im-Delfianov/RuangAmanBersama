@@ -119,7 +119,7 @@ exports.registerUser = async (req, res) => {
       );
 
 
-      const verifyLink = `${process.env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
+      const verifyLink = `${process.env.BACKEND_URL}/auth/verify-email?token=${verificationToken}`;
 
       await sendEmail({
         to: email,
@@ -298,7 +298,7 @@ exports.resendVerificationEmail = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    const verifyLink = `${process.env.FRONTEND_URL}/auth/verify-email?token=${token}`;
+    const verifyLink = `${process.env.BACKEND_URL}/auth/verify-email?token=${token}`;
 
     await sendEmail({
       to: email,
@@ -332,7 +332,7 @@ exports.forgotPassword = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${token}`;
+    const resetLink = `${process.env.BACKEND_URL}/auth/reset-password?token=${token}`;
     await userModel.saveResetToken(user.user_id, token, new Date(Date.now() + 3600000)); // 1 jam
 
     await sendEmail({
