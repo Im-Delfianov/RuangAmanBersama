@@ -141,50 +141,66 @@ exports.registerUser = async (req, res) => {
   
 };
 
+
 exports.googleLogin = async (req, res) => {
-  const { id_token } = req.body;
-  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-  if (!id_token) return res.status(400).json({ message: 'ID Token is required' });
+  const { code } = req.body;
+  const client = new OAuth2Client({
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    redirectUri: process.env.GOOGLE_REDIRECT_URI,
+  });
 
   try {
-    const ticket = await client.verifyIdToken({
-      idToken: id_token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    // Tukar code dengan token
+    const { tokens } = await client.getToken(code);
+    client.setCredentials(tokens);
 
-    const payload = ticket.getPayload();
-    const { email } = payload;
+    // Ambil data google user
+    const oauth2 = google.oauth2({ version: "v2", auth: client });
+    const { data: userInfo } = await oauth2.userinfo.get();
 
-    const user = await userModel.findUserbyEmail(email);
+    // Cek apakah user sudah ada
+    let user = await userModel.findUserbyEmail(userInfo.email);
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found. Please register first.' });
+      // Generate username dari email jika belum dikirim dari frontend
+      let username;
+      let existingUser;
+      do {
+        username = `User${Math.floor(10000 + Math.random() * 90000)}`;
+        existingUser = await userModel.findUserbyUsername(username); // Pastikan tidak dobel
+      } while (existingUser);
+
+      // Simpan user baru
+      user = await userModel.createUser({
+        email: userInfo.email,
+        password_hash: null, // karena pakai Google
+        username,
+        full_name: userInfo.name,
+        avatar_url: userInfo.picture,
+        provider: 'google',
+      });
+
     }
 
-    const accessToken= generateAccessToken(user);
+    if (!user.is_verified) {
+      userModel.verifyUser(user.user_id);
+    }
+
     const refreshToken = generateRefreshToken(user);
 
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-      });
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'None',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
 
-      res.status(200).json({
-        message: 'Login berhasil',
-        accessToken,
-        user: {
-          id: user.user_id,
-          email: user.email,
-          username: user.username,
-          full_name: user.full_name,
-          role: user.role
-        }
-      });
-  } catch (err) {
-    console.error('Google login error:', err);
-    res.status(500).json({ message: 'Login with Google failed' });
+    res.status(200).json({ message: "Login berhasil", userInfo });
+   
+  } catch (error) {
+    console.error("Google login error:", error);
+    res.status(500).json({ message: "Google login gagal", error });
   }
 };
 
@@ -213,7 +229,7 @@ exports.loginUser = async (req, res) => {
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'None',
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
@@ -332,7 +348,7 @@ exports.forgotPassword = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    const resetLink = `${process.env.BACKEND_URL}/auth/reset-password?token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
     await userModel.saveResetToken(user.user_id, token, new Date(Date.now() + 3600000)); // 1 jam
 
     await sendEmail({
