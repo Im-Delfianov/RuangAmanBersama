@@ -6,6 +6,7 @@ const userModel = require('../config/userModels')
 const jwt = require('jsonwebtoken')
 const { sendEmail } = require('../utils/sendEmailer');
 const { OAuth2Client } = require('google-auth-library');
+const { google } = require('googleapis');
 require('dotenv').config();
 
 app.use(express.json());
