@@ -144,131 +144,73 @@ exports.registerUser = async (req, res) => {
 
 
 exports.googleLogin = async (req, res) => {
-  const { code } = req.body;
+  const code = req.query.code;
   const client = new OAuth2Client({
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    redirectUri: process.env.GOOGLE_REDIRECT_URI,
+    redirectUri: process.env.GOOGLE_REDIRECT_URI, // misal: https://your-backend.com/auth/google/callback
   });
 
   try {
-    // Tukar code dengan token
     const { tokens } = await client.getToken(code);
     client.setCredentials(tokens);
 
-    // Ambil data google user
-    const oauth2 = google.oauth2({ version: "v2", auth: client });
+    const oauth2 = google.oauth2({ version: 'v2', auth: client });
     const { data: userInfo } = await oauth2.userinfo.get();
 
     // Cek apakah user sudah ada
     let user = await userModel.findUserbyEmail(userInfo.email);
-
     if (!user) {
-      // Generate username dari email jika belum dikirim dari frontend
       let username;
       let existingUser;
       do {
         username = `User${Math.floor(10000 + Math.random() * 90000)}`;
-        existingUser = await userModel.findUserbyUsername(username); // Pastikan tidak dobel
+        existingUser = await userModel.findUserbyUsername(username);
       } while (existingUser);
 
-      // Simpan user baru
       user = await userModel.createUser({
         email: userInfo.email,
-        password_hash: null, // karena pakai Google
+        password_hash: null,
         username,
         full_name: userInfo.name,
         avatar_url: userInfo.picture,
         provider: 'google',
       });
-
     }
 
     if (!user.is_verified) {
-      userModel.verifyUser(user.user_id);
+      await userModel.verifyUser(user.user_id);
     }
 
     const refreshToken = generateRefreshToken(user);
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'None',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    // Kirim ke frontend via postMessage (dalam popup)
+        const responseData = {
+      token: refreshToken,
+      user: {
+        id: user.user_id,
+        email: user.email,
+        username: user.username,
+        full_name: user.full_name
+      }
+    };
 
-    res.status(200).json({ message: "Login berhasil", userInfo });
-   
+    res.send(`
+      <html>
+        <body>
+          <script>
+            window.opener.postMessage(${JSON.stringify(responseData)}, "*");
+            window.close();
+          </script>
+        </body>
+      </html>
+    `);
   } catch (error) {
-    console.error("Google login error:", error);
-    res.status(500).json({ message: "Google login gagal", error });
+    console.error('Google login error:', error);
+    res.status(500).send('Login dengan Google gagal.');
   }
 };
 
-
-exports.loginUser = async (req, res) => {
-    const {email, password} = req.body;
-
-    try{
-      const user = await userModel.findUserbyEmail(email)
-      if (!user) {
-        return res.status(401).json({ error: 'Email tidak ditemukan' });
-      }
-
-      if (!user.is_verified) {
-        return res.status(403).json({ error: 'Akun belum diverifikasi. Cek email untuk verifikasi.' });
-      }
-      
-      const {password_hash}= await userModel.userPass(email)
-      const passIsMatch = await bcrypt.compare(password, password_hash);
-      if (!passIsMatch) {
-        return res.status(401).json({ error: 'Password salah' });
-      }
-
-      const accessToken= generateAccessToken(user);
-      const refreshToken = generateRefreshToken(user);
-
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'None',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-      });
-
-      res.status(200).json({
-        message: 'Login berhasil',
-        accessToken,
-        user: {
-          id: user.user_id,
-          email: user.email,
-          username: user.username,
-          full_name: user.full_name,
-          role: user.role
-        }
-      });
-  
-    }catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Terjadi kesalahan saat login', err });
-    }
-};
-
-
-exports.refresh = async (req, res) => {
-  const token = req.cookies.refreshToken;
-  if (!token) return res.sendStatus(401);
-
-  jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) =>{
-    if (err) return res.sendStatus(403);
-
-    const user = await userModel.findUserById(decoded.id);
-    if (!user) return res.sendStatus(404);
-
-    const newAccessToken = generateAccessToken(user);
-
-    res.json({ accessToken: newAccessToken });
-  });
-}
 
 exports.logout = (req, res) => {
   res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'None' });
