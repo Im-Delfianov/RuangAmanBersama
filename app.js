@@ -11,7 +11,7 @@ const cookieparser = require('cookie-parser');
 require('./src/utils/cleanUpUnverified.js');
 require('dotenv').config();
 
-
+console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
 //app.use
 app.use(cors({
   origin: process.env.FRONTEND_URL, 
