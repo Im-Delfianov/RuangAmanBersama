@@ -6,7 +6,6 @@ const userModel = require('../config/userModels')
 const jwt = require('jsonwebtoken')
 const { sendEmail } = require('../utils/sendEmailer');
 const { OAuth2Client } = require('google-auth-library');
-const { google } = require('googleapis');
 require('dotenv').config();
 
 app.use(express.json());
@@ -142,7 +141,6 @@ exports.registerUser = async (req, res) => {
   
 };
 
-
 exports.googleLogin = async (req, res) => {
   const code = req.query.code;
   const client = new OAuth2Client({
@@ -195,8 +193,8 @@ exports.googleLogin = async (req, res) => {
       }
     };
 
-    res.send(`
-      <html>
+    res.send(
+      `<html>
         <body>
           <script>
             window.opener.postMessage(${JSON.stringify(responseData)}, "*");
@@ -211,6 +209,69 @@ exports.googleLogin = async (req, res) => {
   }
 };
 
+exports.loginUser = async (req, res) => {
+    const {email, password} = req.body;
+
+    try{
+      const user = await userModel.findUserbyEmail(email)
+      if (!user) {
+        return res.status(401).json({ error: 'Email tidak ditemukan' });
+      }
+
+      if (!user.is_verified) {
+        return res.status(403).json({ error: 'Akun belum diverifikasi. Cek email untuk verifikasi.' });
+      }
+      
+      const {password_hash}= await userModel.userPass(email)
+      const passIsMatch = await bcrypt.compare(password, password_hash);
+      if (!passIsMatch) {
+        return res.status(401).json({ error: 'Password salah' });
+      }
+
+      const accessToken= generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
+
+      res.status(200).json({
+        message: 'Login berhasil',
+        accessToken,
+        user: {
+          id: user.user_id,
+          email: user.email,
+          username: user.username,
+          full_name: user.full_name,
+          role: user.role
+        }
+      });
+  
+    }catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Terjadi kesalahan saat login', err });
+    }
+};
+
+
+exports.refresh = async (req, res) => {
+  const token = req.cookies.refreshToken;
+  if (!token) return res.sendStatus(401);
+
+  jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) =>{
+    if (err) return res.sendStatus(403);
+
+    const user = await userModel.findUserById(decoded.id);
+    if (!user) return res.sendStatus(404);
+
+    const newAccessToken = generateAccessToken(user);
+
+    res.json({ accessToken: newAccessToken });
+  });
+}
 
 exports.logout = (req, res) => {
   res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'None' });
